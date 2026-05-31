@@ -40,11 +40,6 @@ No es necesario incorporar un cuarto cajero bajo las condiciones actuales.
 La mejor alternativa es asignar 2 cajeros a retiros y 1 cajero a pagos.
 Visualización del proyecto
 
-Una vez desplegado mediante GitHub Pages, el proyecto puede visualizarse en:
-
-https://usuario.github.io/problema-bancario-simulacion/
-
-(Reemplazar "usuario" por el nombre real de la cuenta de GitHub).
 
 Integrantes
 Cristian Andrei Rendón Alcaraz
