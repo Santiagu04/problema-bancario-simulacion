@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulación de Colas — Banco de Colombia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f5f7fa;color:#1a1a2e;padding:1.5rem}
+h2{font-size:18px;font-weight:500;margin-bottom:1rem}
+h3{font-size:15px;font-weight:500;margin-bottom:.6rem}
+.wrap{max-width:960px;margin:0 auto}
+.tabs{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap}
+.tab{padding:6px 14px;border-radius:8px;border:1px solid #ccc;font-size:13px;cursor:pointer;background:transparent;color:#555;transition:all .15s}
+.tab.active{background:#e8eef6;color:#1a1a2e;border-color:#888;font-weight:500}
+.section{display:none}.section.active{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
+.metric{background:#fff;border:1px solid #e0e6ef;border-radius:8px;padding:.85rem 1rem}
+.metric .lbl{font-size:12px;color:#666;margin-bottom:4px}
+.metric .val{font-size:20px;font-weight:500;color:#1a1a2e}
+.metric .sub{font-size:11px;color:#999;margin-top:2px}
+.card{background:#fff;border:1px solid #dde3ed;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:500}
+.badge-blue{background:#E6F1FB;color:#0C447C}
+.badge-teal{background:#E1F5EE;color:#085041}
+.badge-amber{background:#FAEEDA;color:#633806}
+.badge-red{background:#FCEBEB;color:#791F1F}
+.badge-green{background:#EAF3DE;color:#27500A}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid #e0e6ef;color:#555;font-size:12px}
+.tbl td{padding:6px 8px;border-bottom:1px solid #f0f3f8;color:#1a1a2e}
+.tbl tr:last-child td{border-bottom:none}
+.sep{border-top:1px solid #e8eef6;margin:1rem 0}
+.note{font-size:12px;color:#444;line-height:1.5;padding:.6rem .75rem;background:#eef4fb;border-radius:6px;border-left:3px solid #378ADD}
+.rec{padding:.75rem 1rem;border-radius:8px;margin-bottom:.6rem;border-left:3px solid}
+.rec-ok{background:#EAF3DE;border-color:#3B6D11}
+.rec-ok p{color:#173404;font-size:13px}
+.rec-warn{background:#FAEEDA;border-color:#854F0B}
+.rec-warn p{color:#412402;font-size:13px}
+.rec-info{background:#E6F1FB;border-color:#185FA5}
+.rec-info p{color:#042C53;font-size:13px}
+.bar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.bar-lbl{font-size:12px;color:#666;width:70px;flex-shrink:0;text-align:right}
+.bar-outer{flex:1;background:#f0f3f8;border-radius:4px;height:18px;overflow:hidden}
+.bar-inner{height:100%;border-radius:4px;transition:width .6s}
+.chart-wrap{position:relative;width:100%}
+.header{margin-bottom:1.5rem}
+.header h1{font-size:22px;font-weight:600;color:#1a1a2e}
+.header p{font-size:13px;color:#666;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="header">
+  <h1>Simulación de Colas — Banco de Colombia</h1>
+  <p>10 réplicas · Modelo M/M/1 · Jornada de 8 horas</p>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="show('p1')">1. Atención por cajero</button>
+  <button class="tab" onclick="show('p2')">2. Usuarios promedio</button>
+  <button class="tab" onclick="show('p3')">3. Usuarios por réplica</button>
+  <button class="tab" onclick="show('p4')">4. Nuevo cajero</button>
+  <button class="tab" onclick="show('p5')">5. Decisión final</button>
+</div>
+
+<!-- PUNTO 1 -->
+<div id="p1" class="section active">
+  <div class="card">
+    <h3>Punto 1 — Cajero con menor y mayor tiempo promedio de atención</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:1rem">Tiempo promedio de servicio observado en cada cajero a través de las 10 réplicas (ambas configuraciones).</p>
+    <div class="grid2">
+      <div>
+        <p style="font-size:12px;color:#666;margin-bottom:.4rem">Configuración A: 1 retiro · 2 pagos</p>
+        <table class="tbl">
+          <thead><tr><th>Cajero</th><th>Tipo</th><th>Atención prom. (min)</th></tr></thead>
+          <tbody>
+            <tr><td>Cajero 1</td><td><span class="badge badge-blue">Retiro</span></td><td>2.34</td></tr>
+            <tr><td>Cajero 2</td><td><span class="badge badge-teal">Pago</span></td><td>4.89</td></tr>
+            <tr><td>Cajero 3</td><td><span class="badge badge-teal">Pago</span></td><td>4.89</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <p style="font-size:12px;color:#666;margin-bottom:.4rem">Configuración B: 2 retiros · 1 pago</p>
+        <table class="tbl">
+          <thead><tr><th>Cajero</th><th>Tipo</th><th>Atención prom. (min)</th></tr></thead>
+          <tbody>
+            <tr><td>Cajero 1</td><td><span class="badge badge-blue">Retiro</span></td><td>2.36</td></tr>
+            <tr><td>Cajero 2</td><td><span class="badge badge-blue">Retiro</span></td><td>2.36</td></tr>
+            <tr><td>Cajero 3</td><td><span class="badge badge-teal">Pago</span></td><td>5.26</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="grid2">
+      <div class="metric">
+        <div class="lbl">Cajero más rápido</div>
+        <div class="val">2.10 min</div>
+        <div class="sub">Cajero de retiros (Config. B, réplica con menor dispersión)</div>
+      </div>
+      <div class="metric">
+        <div class="lbl">Cajero más lento</div>
+        <div class="val">7.36 min</div>
+        <div class="sub">Cajero de pagos (Config. A, réplica más cargada)</div>
+      </div>
+    </div>
+    <div class="note">Los cajeros de retiro tienen tiempos de atención entre <strong>1.84 – 2.87 min</strong> (rápidos), mientras los de pago varían entre <strong>2.89 – 7.36 min</strong>. La diferencia proviene del perfil de servicio: la media ponderada de retiros es 2.34 min vs. 5.2 min en pagos.</div>
+  </div>
+
+  <div class="card">
+    <h3>Distribución del tiempo de servicio por tipo de cajero</h3>
+    <div style="margin-top:.5rem">
+      <p style="font-size:12px;color:#666;margin-bottom:.5rem">Cajeros de retiro (μ = 0.427 / min)</p>
+      <div class="bar-wrap"><span class="bar-lbl">Rápido</span><div class="bar-outer"><div class="bar-inner" style="width:25%;background:#378ADD"></div></div><span style="font-size:12px;color:#666">1 min (23%)</span></div>
+      <div class="bar-wrap"><span class="bar-lbl">Normal</span><div class="bar-outer"><div class="bar-inner" style="width:80%;background:#378ADD;opacity:.75"></div></div><span style="font-size:12px;color:#666">2 min (40%)</span></div>
+      <div class="bar-wrap"><span class="bar-lbl">Lento</span><div class="bar-outer"><div class="bar-inner" style="width:42.5%;background:#378ADD;opacity:.5"></div></div><span style="font-size:12px;color:#666">3 min (17%)</span></div>
+      <div class="bar-wrap"><span class="bar-lbl">Muy lento</span><div class="bar-outer"><div class="bar-inner" style="width:80%;background:#378ADD;opacity:.3"></div></div><span style="font-size:12px;color:#666">4 min (20%)</span></div>
+      <p style="font-size:12px;color:#666;margin:.75rem 0 .5rem">Cajeros de pago (μ = 0.192 / min)</p>
+      <div class="bar-wrap"><span class="bar-lbl">Rápido</span><div class="bar-outer"><div class="bar-inner" style="width:42.8%;background:#1D9E75"></div></div><span style="font-size:12px;color:#666">3 min (10%)</span></div>
+      <div class="bar-wrap"><span class="bar-lbl">Normal</span><div class="bar-outer"><div class="bar-inner" style="width:42.8%;background:#1D9E75;opacity:.75"></div></div><span style="font-size:12px;color:#666">3 min (20%)</span></div>
+      <div class="bar-wrap"><span class="bar-lbl">Lento</span><div class="bar-outer"><div class="bar-inner" style="width:71.4%;background:#1D9E75;opacity:.5"></div></div><span style="font-size:12px;color:#666">5 min (30%)</span></div>
+      <div class="bar-wrap"><span class="bar-lbl">Muy lento</span><div class="bar-outer"><div class="bar-inner" style="width:100%;background:#1D9E75;opacity:.3"></div></div><span style="font-size:12px;color:#666">7 min (40%)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- PUNTO 2 -->
+<div id="p2" class="section">
+  <div class="card">
+    <h3>Punto 2 — Promedio de usuarios por tipo en la totalidad de cajeros</h3>
+    <div class="grid4" style="margin-top:.75rem">
+      <div class="metric"><div class="lbl">Retiro — Config. A</div><div class="val">149.7</div><div class="sub">±12.1 usuarios/día</div></div>
+      <div class="metric"><div class="lbl">Pago — Config. A</div><div class="val">46.1</div><div class="sub">±10.1 usuarios/día</div></div>
+      <div class="metric"><div class="lbl">Retiro — Config. B</div><div class="val">153.7</div><div class="sub">±11.1 usuarios/día</div></div>
+      <div class="metric"><div class="lbl">Pago — Config. B</div><div class="val">45.8</div><div class="sub">±8.3 usuarios/día</div></div>
+    </div>
+    <div class="sep"></div>
+    <div class="note" style="margin-bottom:.75rem">El volumen de usuarios por tipo es consistente entre configuraciones porque el flujo de llegadas no cambia; lo que varía es cómo se distribuye la carga entre cajeros. El 70 % corresponde a retiros (~150 usuarios) y 30 % a pagos (~46 usuarios).</div>
+    <div class="chart-wrap" style="height:200px"><canvas id="c2"></canvas></div>
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:#666">
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#378ADD;display:inline-block"></span>Retiro</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block"></span>Pago</span>
+    </div>
+  </div>
+</div>
+
+<!-- PUNTO 3 -->
+<div id="p3" class="section">
+  <div class="card">
+    <h3>Punto 3 — Usuarios por tipo en cada réplica</h3>
+    <div class="grid2" style="margin-top:.75rem">
+      <div>
+        <p style="font-size:13px;font-weight:500;margin-bottom:.6rem">Config. A — Retiro (1 cajero)</p>
+        <table class="tbl">
+          <thead><tr><th>Réplica</th><th>Usuarios</th><th></th></tr></thead>
+          <tbody id="tbA_ret"></tbody>
+        </table>
+      </div>
+      <div>
+        <p style="font-size:13px;font-weight:500;margin-bottom:.6rem">Config. A — Pago (2 cajeros)</p>
+        <table class="tbl">
+          <thead><tr><th>Réplica</th><th>Usuarios</th><th></th></tr></thead>
+          <tbody id="tbA_pag"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="grid2">
+      <div>
+        <p style="font-size:13px;font-weight:500;margin-bottom:.6rem">Config. B — Retiro (2 cajeros)</p>
+        <table class="tbl">
+          <thead><tr><th>Réplica</th><th>Usuarios</th><th></th></tr></thead>
+          <tbody id="tbB_ret"></tbody>
+        </table>
+      </div>
+      <div>
+        <p style="font-size:13px;font-weight:500;margin-bottom:.6rem">Config. B — Pago (1 cajero)</p>
+        <table class="tbl">
+          <thead><tr><th>Réplica</th><th>Usuarios</th><th></th></tr></thead>
+          <tbody id="tbB_pag"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="grid2">
+      <div class="metric"><div class="lbl">Réplica con menos usuarios — Retiro</div><div class="val" style="font-size:15px">Config. A: Rép. 10 (134)</div><div class="sub">Config. B: Rép. 7 (134)</div></div>
+      <div class="metric"><div class="lbl">Réplica con menos usuarios — Pago</div><div class="val" style="font-size:15px">Config. A: Rép. 5 (30)</div><div class="sub">Config. B: Rép. 6 (37)</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PUNTO 4 -->
+<div id="p4" class="section">
+  <div class="card">
+    <h3>Punto 4 — ¿Se necesita un nuevo cajero? (criterio: tiempo de espera en cola)</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:1rem">Referencia: espera aceptable ≤ 5 min. Se aplica la fórmula analítica M/M/1: Wq = ρ / (μ·(1−ρ))</p>
+    <table class="tbl" style="margin-bottom:1rem">
+      <thead><tr><th>Configuración</th><th>Tipo</th><th>ρ (utiliz.)</th><th>Wq analítico (min)</th><th>Wq simulado (min)</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td>A · 1 retiro / 2 pagos</td><td>Retiro</td><td>0.765</td><td>7.64</td><td>5.20</td><td><span class="badge badge-amber">⚠️ Crítico</span></td></tr>
+        <tr><td>A · 1 retiro / 2 pagos</td><td>Pago</td><td>0.260</td><td>1.83</td><td>1.70</td><td><span class="badge badge-teal">✓ OK</span></td></tr>
+        <tr><td>B · 2 retiros / 1 pago</td><td>Retiro</td><td>0.383</td><td>1.45</td><td>1.37</td><td><span class="badge badge-teal">✓ OK</span></td></tr>
+        <tr><td>B · 2 retiros / 1 pago</td><td>Pago</td><td>0.520</td><td>5.63</td><td>4.88</td><td><span class="badge badge-amber">⚠️ Límite</span></td></tr>
+      </tbody>
+    </table>
+    <div class="sep"></div>
+    <div class="rec rec-warn"><p><strong>Config. A (1 retiro):</strong> ρ = 0.765 → Wq analítico = 7.64 min. El cajero de retiros opera al 77 % de su capacidad y genera colas de más de 7 minutos. Se requiere un cajero adicional de retiros o reasignación.</p></div>
+    <div class="rec rec-ok"><p><strong>Config. B (2 retiros):</strong> ρ_retiro = 0.383 (Wq = 1.45 min). Los retiros están bien servidos. El cajero de pagos llega a ρ = 0.52 con Wq analítico de 5.63 min; la simulación arrojó 4.88 min, en el límite aceptable.</p></div>
+    <div class="rec rec-info"><p><strong>Conclusión:</strong> Con la configuración actual de 3 cajeros, la asignación B (2 retiros + 1 pago) satisface el umbral de espera sin necesidad de un 4.° cajero. Solo se necesitaría uno adicional si la demanda de pagos crece significativamente.</p></div>
+  </div>
+</div>
+
+<!-- PUNTO 5 -->
+<div id="p5" class="section">
+  <div class="card">
+    <h3>Punto 5 — Decisión: ¿cuántos cajeros para retiros y cuántos para pagos?</h3>
+    <div class="grid2" style="margin-top:.75rem">
+      <div style="border:2px solid #185FA5;border-radius:10px;padding:1rem">
+        <span class="badge badge-red" style="margin-bottom:.5rem">Opción A — descartada</span>
+        <p style="font-size:14px;font-weight:500;margin:.4rem 0">1 cajero retiro · 2 cajeros pago</p>
+        <div class="sep" style="margin:.6rem 0"></div>
+        <table class="tbl">
+          <tr><td style="color:#666;font-size:12px">ρ retiro</td><td style="font-weight:500">0.765 ⚠️</td></tr>
+          <tr><td style="color:#666;font-size:12px">Wq retiro</td><td style="font-weight:500">7.64 min ⚠️</td></tr>
+          <tr><td style="color:#666;font-size:12px">ρ pago</td><td style="font-weight:500">0.260 ✓</td></tr>
+          <tr><td style="color:#666;font-size:12px">Wq pago</td><td style="font-weight:500">1.83 min ✓</td></tr>
+          <tr><td style="color:#666;font-size:12px">Usuarios retiro/día</td><td>~150</td></tr>
+          <tr><td style="color:#666;font-size:12px">Usuarios pago/día</td><td>~46</td></tr>
+        </table>
+        <p style="font-size:12px;color:#791F1F;margin-top:.6rem">El cajero de retiros está sobrecargado. Los cajeros de pagos tienen mucha capacidad ociosa (ρ=0.26).</p>
+      </div>
+      <div style="border:2px solid #0F6E56;border-radius:10px;padding:1rem">
+        <span class="badge badge-green" style="margin-bottom:.5rem">✓ Opción B — recomendada</span>
+        <p style="font-size:14px;font-weight:500;margin:.4rem 0">2 cajeros retiro · 1 cajero pago</p>
+        <div class="sep" style="margin:.6rem 0"></div>
+        <table class="tbl">
+          <tr><td style="color:#666;font-size:12px">ρ retiro</td><td style="font-weight:500">0.383 ✓</td></tr>
+          <tr><td style="color:#666;font-size:12px">Wq retiro</td><td style="font-weight:500">1.45 min ✓</td></tr>
+          <tr><td style="color:#666;font-size:12px">ρ pago</td><td style="font-weight:500">0.520 ✓</td></tr>
+          <tr><td style="color:#666;font-size:12px">Wq pago</td><td style="font-weight:500">5.63 min ~</td></tr>
+          <tr><td style="color:#666;font-size:12px">Usuarios retiro/día</td><td>~154</td></tr>
+          <tr><td style="color:#666;font-size:12px">Usuarios pago/día</td><td>~46</td></tr>
+        </table>
+        <p style="font-size:12px;color:#085041;margin-top:.6rem">Distribución equilibrada. Ambos tipos atienden dentro del umbral. No se necesita cajero adicional.</p>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="rec rec-info"><p><strong>Recomendación final:</strong> Asignar <strong>2 cajeros exclusivos para retiros</strong> y <strong>1 cajero exclusivo para pagos/consignaciones</strong>. Esta configuración reduce el tiempo de espera en retiros de 7.6 a 1.5 min (−80 %), mantiene el servicio de pagos dentro del umbral con ρ = 0.52, y no requiere la contratación de personal adicional.</p></div>
+    <div class="chart-wrap" style="height:220px;margin-top:.75rem"><canvas id="c5"></canvas></div>
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:12px;color:#666">
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#378ADD;display:inline-block"></span>Config. A</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block"></span>Config. B</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="width:22px;height:2px;background:#E24B4A;display:inline-block"></span>Umbral 5 min</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function show(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>{if(t.getAttribute('onclick').includes(id))t.classList.add('active')});
+}
+
+const dA_ret=[135,158,164,173,141,146,141,154,151,134];
+const dA_pag=[35,43,63,43,30,45,40,51,49,62];
+const dB_ret=[142,152,149,160,158,173,134,150,169,150];
+const dB_pag=[42,60,59,47,38,37,40,39,42,54];
+const minA_ret=Math.min(...dA_ret), minA_pag=Math.min(...dA_pag);
+const minB_ret=Math.min(...dB_ret), minB_pag=Math.min(...dB_pag);
+
+function fillTbl(id, data, minVal){
+  const tb=document.getElementById(id);
+  data.forEach((v,i)=>{
+    const tr=document.createElement('tr');
+    const mark=v===minVal?'<span class="badge badge-green">Mín</span>':'';
+    tr.innerHTML=`<td>Réplica ${i+1}</td><td>${v}</td><td>${mark}</td>`;
+    tb.appendChild(tr);
+  });
+}
+fillTbl('tbA_ret',dA_ret,minA_ret);
+fillTbl('tbA_pag',dA_pag,minA_pag);
+fillTbl('tbB_ret',dB_ret,minB_ret);
+fillTbl('tbB_pag',dB_pag,minB_pag);
+
+new Chart(document.getElementById('c2'),{
+  type:'bar',
+  data:{
+    labels:['Config. A','Config. B'],
+    datasets:[
+      {label:'Retiro',data:[149.7,153.7],backgroundColor:'#378ADD',borderSkipped:false},
+      {label:'Pago',data:[46.1,45.8],backgroundColor:'#1D9E75',borderSkipped:false}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      y:{beginAtZero:true,ticks:{font:{size:11}},grid:{color:'rgba(0,0,0,.06)'}},
+      x:{ticks:{font:{size:11}}}
+    }
+  }
+});
+
+new Chart(document.getElementById('c5'),{
+  type:'bar',
+  data:{
+    labels:['Retiro','Pago'],
+    datasets:[
+      {label:'Config. A',data:[7.64,1.83],backgroundColor:'#378ADD',borderSkipped:false},
+      {label:'Config. B',data:[1.45,5.63],backgroundColor:'#1D9E75',borderSkipped:false}
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      annotation:{
+        annotations:{
+          line1:{type:'line',yMin:5,yMax:5,borderColor:'#E24B4A',borderWidth:2,borderDash:[5,4]}
+        }
+      }
+    },
+    scales:{
+      y:{beginAtZero:true,ticks:{callback:v=>v+' min',font:{size:11}},grid:{color:'rgba(0,0,0,.06)'}},
+      x:{ticks:{font:{size:11}}}
+    }
+  }
+});
+</script>
+</body>
+</html>
