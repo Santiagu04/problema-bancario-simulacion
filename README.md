@@ -43,10 +43,12 @@ Visualización del proyecto
 
 Integrantes
 Cristian Andrei Rendón Alcaraz
-Kevin Saldarriaga Vélez
-Santiago Agudelo Escobar
-Curso
 
+Kevin Saldarriaga Vélez
+
+Santiago Agudelo Escobar
+
+Curso
 Simulación – Ingeniería de Software y Datos
 
 Institución Universitaria Digital de Antioquia
